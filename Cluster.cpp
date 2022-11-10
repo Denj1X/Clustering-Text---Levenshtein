@@ -112,7 +112,7 @@ int main() {
         if(!viz[i])
             dfs(i, comp);
     }
-
+    ///TODO: find a way to print the words as nodes
 
     return 0;
 }
