@@ -1,15 +1,34 @@
+/// Pentru a calcula distanta Levenshtein dintre doua cuvinte
+/// vom avea o functie care va utiliza programare dinamica:
+/// vom construi o matrice unde dp[i][j] = distanta dintre
+/// primele i litere ale primului cuvant si primele j litere ale celui de-al doilea;
+
+///Vom avea N cuvinte, MAX lungimea celui mai lung cuvant
+///Apoi facem graful complet, sub forma unei liste de muchii
+///Facem sortarea muchiilor
+///Apoi parcurgem lista si facem un Kruskal pe cuvinte
+///Unde vom face n-k reuniuni
+///Apoi cu un for fortat, cu worst case O(n^2), dar best case O(1)
+///Vom gasi distanta minima intre 2 componente din cele k
+///Complexitate Levenshtein pentru N cuvinte: O((N * MAX)^2)
+///Complexitate sortare lista de muchii: O(N^2 * log N^2)
+///Complexitate Kruskal cu n-k reuniuni: O(N^2 * log N^2)
+///Nefacand cu euristica, nu o voi mai mentiona
+///Gasire simple linkeage + afisare k componente: O(N^2)
+///Complexitate finala: O(max(((N * MAX)^2), (N^2 * log N^2)))
+
+
 #include <bits/stdc++.h>
 
 using namespace std;
-
 ifstream f("cuvinte.in");
 
-///min function for 3 values
+///functia de minim pt 3 numere
 int min(int x, int y, int z) {
     return min(min(x, y), z);
 }
 
-///editing distance
+///distanta Levenshtein cu PD
 int Levenshtein(string str1, string str2, int m, int n) {
     int dp[m + 1][n + 1];
     for (int i = 0; i <= m; i++) {
@@ -27,13 +46,11 @@ int Levenshtein(string str1, string str2, int m, int n) {
     return dp[m][n];
 }
 
-
-char *sir, *p, *elem;
 vector<string> vec;
 vector<pair<int, pair<int, int> > >gr;
 vector<int> parent, viz;
 
-///find the root for a node
+///gasirea stramosului
 int disfind(int x) {
     while (parent[x] != x) {
         parent[x] = parent[parent[x]];
@@ -42,77 +59,75 @@ int disfind(int x) {
     return x;
 }
 
-///the reunion of connected components
-///which include two given nodes
+///reuniunea componentelor
 void disreuniune(int x, int y) {
     int i = disfind(x);
     int j = disfind(y);
     parent[i] = parent[j];
 }
 
-///DFS function
-void dfs(const int &node, vector<int> *comp) {
-    viz[node] = 1;
-    for(auto vecin : comp[node]) {
-        if(!viz[vecin])
-            dfs(vecin, comp);
-    }
-}
-
 int main() {
     int k;
     cin >> k;
-    f.get(sir, 10000);
-    p = strtok(sir, " ");
-
-    ///taking each word as a node
-    while(p != NULL) {
-        strcpy(elem, p);
-        vec.push_back(elem);
-        p = strtok(NULL, " ");
+    string s;
+    while(f >> s) {
+        vec.push_back(s);
     }
+    ///citirea cuvintelor
 
-    ///creating the complete undirected weighted graph
-    for(int i = 1; i < vec.size(); i++) {
-        for(int j = 0; j < i; j++) {
+    int n = vec.size();
+    ///crearea grafului complet ponderat
+    for(int i = 0; i < n; i++) {
+        for(int j = i + 1; j < n; j++) {
             int cost = Levenshtein(vec[i], vec[j], (int) vec[i].length(), (int) vec[j].length());
             gr.push_back(make_pair(cost, make_pair(i, j)));
         }
     }
 
-    int n = vec.size();
     parent.resize(n+1);
-    vector<int> comp[n+1];
-    ///ascending sort of vertices after cost
+    ///sortam lista de muchii dupa cost
     sort(gr.begin(), gr.end());
 
+    ///initializarea vectorului de stramos
     for(int i = 0; i < n; i++) {
         parent[i] = i;
     }
 
-    int linkeage = 0, val = 0;
+    ///parcurgerea listei de muchii pana la n-k reuniuni
+    int linkeage = 1e9, val = 0;
     for(auto el : gr) {
-        if(val < n - k) {
-            int cost = el.first;
-            int x = el.second.first;
-            int y = el.second.second;
-            if (disfind(x) != disfind(y)) {
-                disreuniune(x, y);
-                comp[x].push_back(y);
-                comp[y].push_back(x);
-                linkeage = cost;
-            }
+        int x = el.second.first;
+        int y = el.second.second;
+        if(val >= n - k)
+            break;
+        if(disfind(x) != disfind(y)) {
+            disreuniune(x, y);
             val++;
         }
     }
 
-    viz.resize(n + 1, 0);
-
-    for(int i = 0; i < n; i++) {
-        if(!viz[i])
-            dfs(i, comp);
+    ///un for fortat pentru gasirea simple linkeage-ului pt Cluster
+    for(auto el : gr) {
+        if(el.first < linkeage && disfind(el.second.first) != disfind(el.second.second)) {
+            cout << el.first << '\n';
+            break;
+        }
     }
-    ///TODO: find a way to print the words as nodes
 
+    viz.resize(n + 1, 0);
+    ///afisarea celor k componente date
+    for(int i = 0; i < n; i++) {
+        int ok = 0;
+        for(int j = 0; j < n; j++) {
+            if((parent[j] == i) && !viz[j]) {
+                cout << vec[j] << " ";
+                viz[j] = 1;
+                ok = 1;
+            }
+        }
+        ///acest ok este pentru afisare corecta, ordonata
+        if(ok)
+            cout << '\n';
+    }
     return 0;
 }
