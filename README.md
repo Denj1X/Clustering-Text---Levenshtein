@@ -1,3 +1,2 @@
 # Clustering-Text---Levenshtein
-Still needs to be a bit modified
-Printing words as nodes for each connected component
+Using Kruskal's algorithm of graphs and Levenshtein's edit distance, I made a different approach for the concept of clustering a given text.
